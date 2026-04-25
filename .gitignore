@@ -1,0 +1,13 @@
+.env
+__pycache__
+decrypted_large.json
+encrypted_response.txt
+large_res.txt
+request_payload.txt
+fetched_results.json
+final.m3u8
+origin_media.m3u8
+m3u8_downloads/
+data/
+.venv/
+test/
