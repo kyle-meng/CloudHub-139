@@ -83,142 +83,313 @@ def get_share_name_from_results(results):
 
 DASHBOARD_HTML = r"""
 <!DOCTYPE html>
-<html>
+<html lang="zh-CN">
 <head>
     <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>云资源管理 - 概览</title>
     <style>
-        body { font-family: -apple-system, sans-serif; padding: 40px; background: #f0f2f5; }
-        .dashboard { max-width: 800px; margin: auto; background: white; padding: 30px; border-radius: 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
-        h1 { color: #1e293b; margin-bottom: 30px; }
+        :root {
+            --primary: #3b82f6;
+            --primary-hover: #2563eb;
+            --success: #10b981;
+            --success-hover: #059669;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --bg-body: #f1f5f9;
+            --bg-card: #ffffff;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --border-light: #e2e8f0;
+            --shadow-sm: 0 1px 3px rgba(0,0,0,0.1);
+            --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -1px rgba(0,0,0,0.03);
+            --shadow-lg: 0 10px 25px -3px rgba(0,0,0,0.05);
+            --radius-md: 10px;
+            --radius-lg: 16px;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; 
+            padding: 40px 20px; 
+            background: var(--bg-body); 
+            color: var(--text-main);
+            line-height: 1.5;
+        }
+
+        .container { 
+            max-width: 880px; 
+            margin: auto; 
+            background: var(--bg-card); 
+            padding: 40px; 
+            border-radius: var(--radius-lg); 
+            box-shadow: var(--shadow-lg); 
+        }
+
+        /* --- Header --- */
+        .header {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 20px; padding-bottom: 20px; border-bottom: 1px solid var(--border-light);
+        }
+        .header h1 { 
+            font-size: 28px; font-weight: 800; letter-spacing: -0.5px;
+            background: linear-gradient(135deg, #0f172a 0%, var(--primary) 100%); 
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent; 
+        }
+        .stat-box { text-align: right; }
+        .stat-label { font-size: 13px; color: var(--text-muted); font-weight: 500; margin-bottom: 2px; }
+        .stat-value { font-size: 24px; font-weight: 800; color: var(--primary); letter-spacing: -0.5px; }
+
+        .subtitle {
+            color: var(--text-muted); font-size: 14px; margin-bottom: 25px; 
+            font-style: italic; border-left: 4px solid var(--primary); 
+            padding-left: 12px; line-height: 1.6; background: #f8fafc; padding-top: 8px; padding-bottom: 8px; border-radius: 0 8px 8px 0;
+        }
+
+        /* --- Tags --- */
+        .tags-wrapper { display: flex; gap: 12px; margin-bottom: 35px; flex-wrap: wrap; }
+        .tag {
+            padding: 6px 16px; border-radius: 20px; font-size: 13px; font-weight: 600; 
+            display: flex; align-items: center; gap: 6px; box-shadow: var(--shadow-sm);
+        }
+        .tag-blue { background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; }
+        .tag-green { background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0; }
+        .tag-pink { background: #fdf2f8; color: #be185d; border: 1px solid #fbcfe8; }
+
+        /* --- Action Controls (Grid) --- */
+        .action-grid {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 25px;
+        }
+        .action-card {
+            background: #f8fafc; padding: 20px; border-radius: var(--radius-md); 
+            border: 1px solid var(--border-light);
+        }
+        .action-title { font-size: 14px; color: var(--text-main); margin-bottom: 15px; font-weight: 700; display: flex; align-items: center; gap: 8px;}
+        
+        /* Forms & Inputs */
+        .form-group { display: flex; gap: 10px; margin-bottom: 15px; }
+        .form-group:last-child { margin-bottom: 0; }
+        
+        input[type="text"] {
+            flex: 1; padding: 10px 14px; border-radius: 8px; border: 1px solid #cbd5e1; 
+            outline: none; font-size: 14px; transition: all 0.2s; width: 100%;
+        }
+        input[type="text"]:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15); }
+        
+        button {
+            padding: 10px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; 
+            transition: all 0.2s; border: none; font-size: 14px; white-space: nowrap;
+        }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-primary:hover { background: var(--primary-hover); transform: translateY(-1px); }
+        .btn-success { background: var(--success); color: white; }
+        .btn-success:hover { background: var(--success-hover); transform: translateY(-1px); }
+        .btn-outline { background: white; color: #6366f1; border: 1px solid #6366f1; }
+        .btn-outline:hover { background: #e0e7ff; }
+
+        .divider { border-top: 1px dashed #cbd5e1; margin: 15px 0; }
+        input[type="file"] { font-size: 13px; color: var(--text-muted); flex: 1; }
+        input[type="file"]::file-selector-button {
+            padding: 6px 12px; border-radius: 6px; border: 1px solid var(--border-light);
+            background: white; color: var(--text-main); cursor: pointer; font-size: 12px; margin-right: 10px; transition: 0.2s;
+        }
+        input[type="file"]::file-selector-button:hover { background: #f1f5f9; }
+
+        /* --- Terminal Logs (Popup Modal Style) --- */
+        .logs-section {
+            display: none; /* 默认隐藏 */
+            margin-bottom: 35px; background: #0f172a; border-radius: var(--radius-md); 
+            padding: 20px; color: #f8fafc; font-family: 'Consolas', 'Monaco', monospace; 
+            font-size: 13px; border: 1px solid #1e293b; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.3), inset 0 2px 10px rgba(0,0,0,0.5);
+        }
+        .terminal-show {
+            display: block;
+            animation: slideDownFade 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+        @keyframes slideDownFade {
+            0% { opacity: 0; transform: translateY(-10px); }
+            100% { opacity: 1; transform: translateY(0); }
+        }
+
+        .log-header {
+            display: flex; justify-content: space-between; align-items: center; 
+            margin-bottom: 15px; border-bottom: 1px solid #1e293b; padding-bottom: 12px;
+        }
+        .log-title { color: #38bdf8; font-size: 14px; margin: 0; display: flex; align-items: center; gap: 8px; font-weight: 600; }
+        .status-badge { font-size: 11px; color: #475569; font-weight: bold; letter-spacing: 1px; background: #1e293b; padding: 4px 8px; border-radius: 4px;}
+        
+        .close-terminal-btn {
+            background: transparent; border: none; color: #94a3b8; font-size: 18px; 
+            line-height: 1; cursor: pointer; padding: 4px 8px; border-radius: 4px; transition: 0.2s;
+        }
+        .close-terminal-btn:hover { background: #1e293b; color: #f8fafc; }
+
+        #log-container {
+            height: 200px; overflow-y: auto; display: flex; flex-direction: column; 
+            gap: 6px; padding-right: 10px; scroll-behavior: smooth;
+        }
+        #log-container::-webkit-scrollbar { width: 6px; }
+        #log-container::-webkit-scrollbar-track { background: transparent; }
+        #log-container::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
+        #log-container::-webkit-scrollbar-thumb:hover { background: #475569; }
+
+        /* --- Link Cards --- */
+        .section-title { font-size: 18px; margin-bottom: 15px; font-weight: 700; color: #1e293b; }
+        .links-container { display: flex; flex-direction: column; gap: 12px; }
+        
         .link-card { 
             display: flex; justify-content: space-between; align-items: center;
-            padding: 20px; border: 1px solid #e2e8f0; border-radius: 12px; margin-bottom: 15px;
-            transition: all 0.2s; text-decoration: none; color: inherit;
+            padding: 18px 20px; border: 1px solid var(--border-light); border-radius: var(--radius-md); 
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); text-decoration: none; color: inherit; background: white;
         }
-        .link-card:hover { border-color: #3b82f6; background: #f8fafc; transform: translateY(-2px); }
-        .link-info h3 { margin: 0; color: #334155; }
-        .link-id { font-size: 12px; color: #94a3b8; }
-        .enter-btn { background: #3b82f6; color: white; padding: 8px 20px; border-radius: 8px; font-weight: bold; }
+        .link-card:hover { 
+            border-color: var(--primary); background: #f8fafc; 
+            transform: translateY(-2px); box-shadow: var(--shadow-md);
+        }
+        .link-info h3 { margin: 0 0 4px 0; color: #334155; font-size: 16px; font-weight: 600; }
+        .link-id { font-size: 13px; color: var(--text-muted); font-family: ui-monospace, monospace; }
+        .enter-btn { 
+            background: #eff6ff; color: var(--primary); padding: 8px 16px; 
+            border-radius: 6px; font-weight: 600; font-size: 13px; transition: 0.2s;
+        }
+        .link-card:hover .enter-btn { background: var(--primary); color: white; }
+
+        .empty-state { padding: 30px; text-align: center; color: var(--text-muted); background: #f8fafc; border-radius: var(--radius-md); border: 1px dashed #cbd5e1; }
+
+        /* Animations */
+        @keyframes pulse { 0% { opacity: 1; transform: scale(1); } 50% { opacity: 0.5; transform: scale(1.2); } 100% { opacity: 1; transform: scale(1); } }
+        .dot-pulse { width: 8px; height: 8px; background: var(--success); border-radius: 50%; display: inline-block; box-shadow: 0 0 10px var(--success); animation: pulse 2s infinite; }
+        @keyframes highlight { 0% { background: #10b98122; border-color: var(--success); transform: scale(1.02); } 100% { background: white; border-color: var(--border-light); transform: scale(1); } }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .action-grid { grid-template-columns: 1fr; }
+            .container { padding: 25px 20px; margin: 0; border-radius: 0; box-shadow: none; }
+            body { padding: 0; }
+        }
     </style>
 </head>
 <body>
-    <div class="dashboard">
-        <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 20px;">
-            <h1 style="margin: 0; background: linear-gradient(135deg, #1e293b 0%, #3b82f6 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">139 云影聚合中心</h1>
-            <div style="text-align: right;">
-                <div style="font-size: 13px; color: #94a3b8; font-weight: 500;">库总大小：</div>
-                <div style="font-size: 22px; font-weight: 800; color: #3b82f6; letter-spacing: -0.5px;">{{ total_size }}</div>
+    <div class="container">
+        <header class="header">
+            <h1>139 云影聚合中心</h1>
+            <div class="stat-box">
+                <div class="stat-label">库总大小</div>
+                <div class="stat-value">{{ total_size }}</div>
             </div>
-        </div>
-        <p style="color: #64748b; font-size: 14px; margin: -10px 0 20px 0; font-style: italic; border-left: 3px solid #3b82f6; padding-left: 12px; line-height: 1.6;">
-            “独乐乐不如众乐乐 —— 欢迎分享<strong>永久有效</strong>的优质 Link ID，共建海量云端影院。”
-        </p>
+        </header>
 
-        <div style="display: flex; gap: 10px; margin-bottom: 30px; flex-wrap: wrap;">
-            <span style="background: #eff6ff; color: #1d4ed8; padding: 5px 14px; border-radius: 20px; font-size: 12px; font-weight: bold; border: 1px solid #bfdbfe; display: flex; align-items: center; gap: 5px;">
-                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path></svg>
+        <div class="subtitle">
+            “独乐乐不如众乐乐 —— 欢迎分享<strong>永久有效</strong>的优质 Link ID，共建海量云端影院。”
+        </div>
+
+        <div class="tags-wrapper">
+            <span class="tag tag-blue">
+                <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path></svg>
                 无需转存
             </span>
-            <span style="background: #f0fdf4; color: #15803d; padding: 5px 14px; border-radius: 20px; font-size: 12px; font-weight: bold; border: 1px solid #bbf7d0; display: flex; align-items: center; gap: 5px;">
-                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z"></path></svg>
+            <span class="tag tag-green">
+                <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z"></path></svg>
                 不占空间
             </span>
-            <span style="background: #fdf2f8; color: #be185d; padding: 5px 14px; border-radius: 20px; font-size: 12px; font-weight: bold; border: 1px solid #fbcfe8; display: flex; align-items: center; gap: 5px;">
-                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path></svg>
+            <span class="tag tag-pink">
+                <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path></svg>
                 链接挂载播放
             </span>
         </div>
 
-        <!-- 搜索入口 -->
-        <div class="search-section" style="margin-bottom: 25px;">
-            <form action="/search" method="GET" style="display: flex; gap: 10px;">
-                <input type="text" name="q" placeholder="输入关键词搜索全库资源 (如: 异形, 4K)..." required 
-                       style="flex: 1; padding: 12px 15px; border-radius: 10px; border: 1px solid #e2e8f0; outline: none; font-size: 15px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);">
-                <button type="submit" style="background: #3b82f6; color: white; border: none; padding: 10px 30px; border-radius: 10px; font-weight: bold; cursor: pointer; transition: all 0.2s;">
-                    全库搜索
-                </button>
-            </form>
-        </div>
+        <div class="action-grid">
+            <div class="action-card">
+                <div class="action-title">
+                    <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                    全库检索
+                </div>
+                <form action="/search" method="GET" class="form-group" style="flex-direction: column;">
+                    <input type="text" name="q" placeholder="输入关键词 (如: 异形, 4K)..." required>
+                    <button type="submit" class="btn-primary" style="width: 100%;">全库搜索</button>
+                </form>
+            </div>
 
-        <!-- 添加入口 -->
-        <div style="background: #f8fafc; padding: 20px; border-radius: 12px; border: 2px dashed #e2e8f0; margin-bottom: 20px;">
-            <div style="font-size: 13px; color: #64748b; margin-bottom: 15px; font-weight: bold;">远程抓取：</div>
-            <form id="add-form" style="display: flex; gap: 10px; margin-bottom: 20px;">
-                <input type="text" id="link-id-input" name="link_id" placeholder="粘贴分享 ID 或完整链接" required 
-                       style="flex: 1; padding: 10px 15px; border-radius: 8px; border: 1px solid #cbd5e1; outline: none; font-size: 14px;">
-                <button type="submit" style="background: #10b981; color: white; border: none; padding: 10px 25px; border-radius: 8px; font-weight: bold; cursor: pointer; transition: background 0.2s;">
-                    开始抓取
-                </button>
-            </form>
-            
-            <div style="border-top: 1px solid #e2e8f0; padding-top: 15px;">
-                <div style="font-size: 13px; color: #64748b; margin-bottom: 10px; font-weight: bold;">本地导入 (fetched_results.json)：</div>
-                <form id="upload-form" enctype="multipart/form-data" style="display: flex; align-items: center; gap: 10px;">
-                    <input type="file" name="file" accept=".json" required style="font-size: 12px; color: #64748b; flex: 1;">
-                    <button type="submit" style="background: #6366f1; color: white; border: none; padding: 8px 20px; border-radius: 8px; font-weight: bold; cursor: pointer;">
-                        上传并导入
-                    </button>
+            <div class="action-card">
+                <div class="action-title">
+                    <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"></path></svg>
+                    添加资源
+                </div>
+                <form id="add-form" class="form-group">
+                    <input type="text" id="link-id-input" name="link_id" placeholder="粘贴分享 ID/链接" required>
+                    <button type="submit" class="btn-success">抓取</button>
+                </form>
+                
+                <div class="divider"></div>
+                
+                <form id="upload-form" enctype="multipart/form-data" class="form-group">
+                    <input type="file" name="file" accept=".json" required>
+                    <button type="submit" class="btn-outline">导入本地 JSON</button>
                 </form>
             </div>
         </div>
 
-        <div id="links-container">
+        <div id="terminal-popup" class="logs-section">
+            <div class="log-header">
+                <h2 class="log-title">
+                    <span class="dot-pulse"></span>
+                    实时抓取终端
+                </h2>
+                <div style="display: flex; align-items: center; gap: 15px;">
+                    <span class="status-badge">STATUS: ACTIVE</span>
+                    <button class="close-terminal-btn" onclick="hideTerminal()">×</button>
+                </div>
+            </div>
+            <div id="log-container">
+                <div style="color: #475569; font-style: italic; font-family: inherit;">等待系统就绪...</div>
+            </div>
+        </div>
+
+        <h2 class="section-title">已收录的视频库</h2>
+        <div id="links-container" class="links-container">
             {% for lid, data in links.items() %}
             {% set share_name = data.tree.caLst[0].caName if (data.tree and data.tree.caLst and data.tree.caLst|length > 0) else (data.tree.coLst[0].coName if (data.tree and data.tree.coLst and data.tree.coLst|length > 0) else lid) %}
             <a href="/view/{{ lid }}" class="link-card" id="card-{{ lid }}">
                 <div class="link-info">
                     <h3>{{ share_name }}</h3>
-                    <span class="link-id">分享 ID: {{ lid }}</span>
+                    <span class="link-id">ID: {{ lid }}</span>
                 </div>
                 <div class="enter-btn">进入视频库</div>
             </a>
             {% endfor %}
         </div>
         {% if not links %}
-        <p style="color: #64748b;">暂无可用链接，请在首页添加或在 links.json 中配置。</p>
-        {% endif %}
-
-        <!-- 实时日志显示 -->
-        <div class="logs-section" style="margin-top: 40px; background: #020617; border-radius: 12px; padding: 20px; color: #f8fafc; font-family: 'Consolas', 'Monaco', monospace; font-size: 14px; border: 1px solid #1e293b; box-shadow: inset 0 2px 10px rgba(0,0,0,0.5);">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid #1e293b; padding-bottom: 10px;">
-                <h2 style="color: #38bdf8; font-size: 14px; margin: 0; display: flex; align-items: center; gap: 10px;">
-                    <span style="width: 8px; height: 8px; background: #10b981; border-radius: 50%; display: inline-block; box-shadow: 0 0 10px #10b981; animation: pulse 2s infinite;"></span>
-                    实时抓取终端
-                </h2>
-                <span style="font-size: 11px; color: #475569; font-weight: bold; letter-spacing: 1px;">STATUS: ACTIVE</span>
-            </div>
-            <div id="log-container" style="height: 250px; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; padding-right: 10px; scroll-behavior: smooth;">
-                <div style="color: #475569; font-style: italic;">等待系统就绪...</div>
-            </div>
+        <div class="empty-state">
+            <svg width="40" height="40" style="margin: 0 auto 10px auto; color: #cbd5e1;" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"></path></svg>
+            <p>暂无可用链接，请在上方添加抓取或导入 JSON 数据。</p>
         </div>
+        {% endif %}
     </div>
 
-    <style>
-        @keyframes pulse {
-            0% { opacity: 1; transform: scale(1); }
-            50% { opacity: 0.5; transform: scale(1.2); }
-            100% { opacity: 1; transform: scale(1); }
-        }
-        #log-container::-webkit-scrollbar { width: 6px; }
-        #log-container::-webkit-scrollbar-track { background: transparent; }
-        #log-container::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 10px; }
-        @keyframes highlight {
-            0% { background: #10b98133; border-color: #10b981; }
-            100% { background: transparent; border-color: #e2e8f0; }
-        }
-    </style>
-
     <script>
+        const terminalPopup = document.getElementById('terminal-popup');
         const logContainer = document.getElementById('log-container');
         const linksContainer = document.getElementById('links-container');
         
-        // 处理表单异步提交
+        // 展开与隐藏终端的快捷函数
+        function showTerminal(initialMessage) {
+            terminalPopup.classList.add('terminal-show');
+            logContainer.innerHTML = `<div style="color: #475569; font-style: italic; font-family: inherit;">${initialMessage}</div>`;
+        }
+        function hideTerminal() {
+            terminalPopup.classList.remove('terminal-show');
+        }
+
+        // 处理添加表单
         document.getElementById('add-form').onsubmit = async (e) => {
             e.preventDefault();
             const input = document.getElementById('link-id-input');
             const linkId = input.value.trim();
             if (!linkId) return;
+            
+            // 点击后展开终端
+            showTerminal('开始建立连接并初始化抓取...');
             
             try {
                 const response = await fetch('/add', {
@@ -237,7 +408,7 @@ DASHBOARD_HTML = r"""
             }
         };
 
-        // 使用 EventSource 接收实时日志和完成事件
+        // 处理实时日志
         const source = new EventSource("/stream");
         source.onmessage = function(event) {
             const data = JSON.parse(event.data);
@@ -260,7 +431,18 @@ DASHBOARD_HTML = r"""
                 logContainer.scrollTop = logContainer.scrollHeight;
             } 
             else if (data.type === 'done') {
-                // 动态添加卡片到列表
+                // 如果空状态存在，移除它
+                const emptyState = document.querySelector('.empty-state');
+                if (emptyState) emptyState.remove();
+
+                // 打印完成信息
+                const finishMsg = document.createElement('div');
+                finishMsg.style.lineHeight = '1.6';
+                finishMsg.innerHTML = `<br><span style="color: #10b981; font-weight: bold; font-size: 14px;">✓ 抓取完成，资源已入库，即将自动收起...</span>`;
+                logContainer.appendChild(finishMsg);
+                logContainer.scrollTop = logContainer.scrollHeight;
+
+                // 动态插入卡片
                 if (!document.getElementById('card-' + data.link_id)) {
                     const card = document.createElement('a');
                     card.href = '/view/' + data.link_id;
@@ -269,28 +451,36 @@ DASHBOARD_HTML = r"""
                     card.innerHTML = `
                         <div class="link-info">
                             <h3>${data.name}</h3>
-                            <span class="link-id">分享 ID: ${data.link_id}</span>
+                            <span class="link-id">ID: ${data.link_id}</span>
                         </div>
                         <div class="enter-btn">进入视频库</div>
                     `;
                     linksContainer.prepend(card);
                     
-                    // 闪烁提醒一下
                     card.style.animation = 'highlight 2s ease';
                 }
+
+                // 延迟 3 秒后自动隐藏终端
+                setTimeout(() => {
+                    hideTerminal();
+                }, 3000);
             }
         };
 
-        // 处理上传表单
+        // 处理本地导入表单
         document.getElementById('upload-form').onsubmit = async (e) => {
             e.preventDefault();
             const btn = e.target.querySelector('button');
             btn.disabled = true;
+            const originalText = btn.innerText;
             btn.innerText = '上传中...';
             
+            // 点击后展开终端
+            showTerminal('准备导入本地 JSON 文件...');
+
             const appendLog = (msg, isError = false) => {
                 const div = document.createElement('div');
-                div.style.color = isError ? '#f87171' : '#fbbf24';
+                div.style.color = isError ? '#f87171' : '#10b981';
                 div.style.lineHeight = '1.6';
                 div.innerText = `[${new Date().toLocaleTimeString()}] ${msg}`;
                 logContainer.appendChild(div);
@@ -307,14 +497,14 @@ DASHBOARD_HTML = r"""
                     appendLog(`❌ 导入失败: ${err}`, true);
                     alert('导入失败: ' + err);
                 } else {
-                    appendLog('✅ 导入成功，正在刷新页面...');
-                    setTimeout(() => window.location.reload(), 1000);
+                    appendLog('✅ 导入成功，界面即将刷新...');
+                    setTimeout(() => window.location.reload(), 1500);
                 }
             } catch (err) {
                 appendLog(`❌ 网络异常: ${err}`, true);
             } finally {
                 btn.disabled = false;
-                btn.innerText = '上传并导入';
+                btn.innerText = originalText;
             }
         };
     </script>
@@ -324,71 +514,191 @@ DASHBOARD_HTML = r"""
 
 SEARCH_HTML = r"""
 <!DOCTYPE html>
-<html>
+<html lang="zh-CN">
 <head>
     <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>搜索结果 - {{ query }}</title>
     <style>
-        body { font-family: -apple-system, sans-serif; padding: 40px; background: #f0f2f5; }
-        .container { max-width: 900px; margin: auto; background: white; padding: 30px; border-radius: 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
-        h1 { color: #1e293b; margin-bottom: 20px; font-size: 24px; }
-        .search-stats { color: #64748b; font-size: 14px; margin-bottom: 30px; }
+        :root {
+            --primary: #3b82f6;
+            --primary-hover: #2563eb;
+            --success: #10b981;
+            --bg-body: #f1f5f9;
+            --bg-card: #ffffff;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --border-light: #e2e8f0;
+            --shadow-sm: 0 1px 3px rgba(0,0,0,0.1);
+            --shadow-lg: 0 10px 25px -3px rgba(0,0,0,0.05);
+            --radius-md: 10px;
+            --radius-lg: 16px;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; 
+            padding: 40px 20px; 
+            background: var(--bg-body); 
+            color: var(--text-main);
+            line-height: 1.5;
+        }
+
+        .container { 
+            max-width: 900px; 
+            margin: auto; 
+            background: var(--bg-card); 
+            padding: 40px; 
+            border-radius: var(--radius-lg); 
+            box-shadow: var(--shadow-lg); 
+        }
+
+        /* --- Header & Navigation --- */
+        .header-top { display: flex; flex-direction: column; gap: 15px; margin-bottom: 30px; border-bottom: 1px solid var(--border-light); padding-bottom: 25px; }
+        
+        .back-link { 
+            display: inline-flex; align-items: center; gap: 6px; color: var(--text-muted); 
+            text-decoration: none; font-size: 14px; font-weight: 500; transition: color 0.2s;
+            align-self: flex-start;
+        }
+        .back-link:hover { color: var(--primary); }
+
+        h1 { 
+            color: var(--text-main); font-size: 26px; font-weight: 800; margin: 0;
+            display: flex; align-items: center; gap: 10px;
+        }
+        .search-word { color: var(--primary); }
+        .search-stats { 
+            color: var(--text-muted); font-size: 14px; background: #f8fafc; 
+            padding: 8px 16px; border-radius: 20px; display: inline-block; font-weight: 500;
+        }
+
+        /* --- Result List --- */
+        .result-list { display: flex; flex-direction: column; }
+        
         .result-item { 
-            padding: 15px; border-bottom: 1px solid #f1f5f9; 
+            padding: 20px; border-bottom: 1px solid var(--border-light); 
             display: flex; justify-content: space-between; align-items: center;
+            transition: all 0.2s ease; gap: 20px;
         }
-        .result-item:hover { background: #f8fafc; }
-        .res-main h4 { margin: 0; color: #334155; font-size: 16px; }
-        .res-path { font-size: 12px; color: #94a3b8; margin-top: 4px; }
-        .res-badge { 
-            font-size: 10px; padding: 2px 6px; border-radius: 4px; 
-            margin-right: 8px; text-transform: uppercase; font-weight: bold;
+        .result-item:last-child { border-bottom: none; }
+        .result-item:hover { background: #f8fafc; padding-left: 25px; }
+
+        .res-main { display: flex; gap: 16px; align-items: flex-start; flex: 1; min-width: 0; }
+        
+        .icon-box {
+            flex-shrink: 0; width: 40px; height: 40px; border-radius: 10px;
+            display: flex; align-items: center; justify-content: center;
         }
-        .badge-file { background: #dcfce7; color: #166534; }
-        .badge-folder { background: #dbeafe; color: #1e40af; }
+        .icon-file { background: #eff6ff; color: var(--primary); }
+        .icon-folder { background: #fef2f2; color: #ef4444; }
+
+        .res-content { flex: 1; min-width: 0; }
+        .res-content h4 { 
+            margin: 0 0 6px 0; color: #1e293b; font-size: 16px; font-weight: 600;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        
+        .res-path { 
+            font-size: 13px; color: var(--text-muted); 
+            display: flex; flex-wrap: wrap; align-items: center; gap: 6px;
+        }
+        .badge-source { 
+            background: #e2e8f0; color: #475569; padding: 2px 8px; 
+            border-radius: 4px; font-size: 11px; font-weight: 600;
+        }
+        .path-text { color: #94a3b8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 400px; }
+
+        /* --- Actions --- */
         .action-btn { 
-            text-decoration: none; color: #3b82f6; font-size: 14px; font-weight: 600;
-            padding: 6px 12px; border: 1px solid #3b82f6; border-radius: 6px;
+            text-decoration: none; font-size: 14px; font-weight: 600; flex-shrink: 0;
+            padding: 8px 20px; border-radius: 8px; transition: all 0.2s;
+            display: inline-flex; align-items: center; gap: 6px;
         }
-        .action-btn:hover { background: #3b82f6; color: white; }
-        .no-results { text-align: center; padding: 50px; color: #94a3b8; }
-        .back-link { margin-bottom: 20px; display: inline-block; color: #3b82f6; text-decoration: none; font-size: 14px; }
+        .btn-play { background: var(--primary); color: white; border: 1px solid var(--primary); box-shadow: var(--shadow-sm); }
+        .btn-play:hover { background: var(--primary-hover); border-color: var(--primary-hover); transform: translateY(-1px); }
+        
+        .btn-locate { background: white; color: var(--text-main); border: 1px solid #cbd5e1; }
+        .btn-locate:hover { border-color: var(--text-muted); background: #f8fafc; }
+
+        /* --- Empty State --- */
+        .no-results { text-align: center; padding: 60px 20px; color: var(--text-muted); }
+        .no-results-icon { 
+            width: 64px; height: 64px; margin: 0 auto 20px auto; 
+            background: #f1f5f9; border-radius: 50%; display: flex; 
+            align-items: center; justify-content: center; color: #cbd5e1;
+        }
+        .no-results p { font-size: 16px; font-weight: 500; }
+
+        /* Responsive */
+        @media (max-width: 640px) {
+            .container { padding: 25px 20px; border-radius: 0; box-shadow: none; }
+            body { padding: 0; }
+            .result-item { flex-direction: column; align-items: flex-start; }
+            .action-btn { width: 100%; justify-content: center; }
+            .path-text { max-width: 200px; }
+        }
     </style>
 </head>
 <body>
     <div class="container">
-        <a href="/" class="back-link">← 返回首页</a>
-        <h1>搜索: "{{ query }}"</h1>
-        <div class="search-stats">找到 {{ results|length }} 个相关资源</div>
+        <div class="header-top">
+            <a href="/" class="back-link">
+                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+                返回云资源概览
+            </a>
+            <h1>检索: <span class="search-word">"{{ query }}"</span></h1>
+            <div><span class="search-stats">为您找到 {{ results|length }} 个相关资源</span></div>
+        </div>
 
-        {% for res in results %}
-        <div class="result-item">
-            <div class="res-main">
-                <h4>
-                    <span class="res-badge {{ 'badge-file' if res.type == 'file' else 'badge-folder' }}">
-                        {{ '文件' if res.type == 'file' else '文件夹' }}
-                    </span>
-                    {{ res.name }}
-                </h4>
-                <div class="res-path">
-                    来自: <strong style="color: #64748b;">{{ res.share_name }}</strong> 
-                    {% if res.path %} > {{ res.path }}{% endif %}
+        {% if results %}
+        <div class="result-list">
+            {% for res in results %}
+            <div class="result-item">
+                <div class="res-main">
+                    <div class="icon-box {{ 'icon-file' if res.type == 'file' else 'icon-folder' }}">
+                        {% if res.type == 'file' %}
+                        <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path><path stroke-linecap="round" stroke-linejoin="round" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        {% else %}
+                        <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"></path></svg>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="res-content">
+                        <h4>{{ res.name }}</h4>
+                        <div class="res-path">
+                            <span class="badge-source">{{ res.share_name }}</span>
+                            {% if res.path %}
+                            <span style="color: #cbd5e1;">/</span>
+                            <span class="path-text" title="{{ res.path }}">{{ res.path }}</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                
+                <div>
+                    {% if res.type == 'file' %}
+                    <a href="/view/{{ res.link_id }}?play={{ res.id }}&name={{ res.name|urlencode }}" class="action-btn btn-play">
+                        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 3l14 9-14 9V3z"></path></svg>
+                        立即播放
+                    </a>
+                    {% else %}
+                    <a href="/view/{{ res.link_id }}#folder-{{ res.id }}" class="action-btn btn-locate">
+                        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+                        定位目录
+                    </a>
+                    {% endif %}
                 </div>
             </div>
-            <div>
-        {% if res.type == 'file' %}
-            <a href="/view/{{ res.link_id }}?play={{ res.id }}&name={{ res.name|urlencode }}" class="action-btn">立即播放</a>
-        {% else %}
-            <a href="/view/{{ res.link_id }}#folder-{{ res.id }}" class="action-btn">定位文件夹</a>
-        {% endif %}
-            </div>
+            {% endfor %}
         </div>
-        {% endfor %}
-
-        {% if not results %}
+        {% else %}
         <div class="no-results">
-            <div style="font-size: 48px; margin-bottom: 10px;">🔍</div>
-            <p>未找到匹配 "{{ query }}" 的资源</p>
+            <div class="no-results-icon">
+                <svg width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+            </div>
+            <p>抱歉，未找到匹配 "{{ query }}" 的内容，请尝试更换关键词。</p>
         </div>
         {% endif %}
     </div>
@@ -398,82 +708,250 @@ SEARCH_HTML = r"""
 
 VIEW_HTML = r"""
 <!DOCTYPE html>
-<html>
+<html lang="zh-CN">
 <head>
     <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ link_id }} - 在线预览</title>
     <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
     <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; padding: 20px; background: #f8f9fa; display: flex; gap: 20px; height: 95vh; margin: 0; }
-        .sidebar { flex: 1; background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); overflow-y: auto; }
-        .player-area { flex: 1.5; background: #000; border-radius: 12px; overflow: hidden; position: sticky; top: 20px; height: 60vh; border: 4px solid #1e293b; }
-        video { width: 100%; height: 100%; }
-        h1 { color: #1e293b; font-size: 1.5em; margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between; }
-        .home-link { font-size: 14px; text-decoration: none; color: #3b82f6; font-weight: normal; }
-        .folder-section { margin-top: 10px; margin-left: 15px; border-left: 2px solid #e2e8f0; padding-left: 10px; }
-        .folder-title { font-size: 0.95em; font-weight: bold; color: #475569; margin-bottom: 5px; display: flex; align-items: center; cursor: pointer; }
-        .folder-title::before { content: '📁'; margin-right: 8px; }
-        .file-list { list-style: none; padding: 0; margin-left: 15px; }
-        .file-item { padding: 6px 10px; border-bottom: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: center; border-radius: 4px; }
-        .file-item:hover { background: #f8fafc; }
-        .file-name { color: #334155; font-size: 0.85em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; margin-right: 10px; }
-        .play-btn { background: #3b82f6; color: white; padding: 4px 10px; border-radius: 4px; cursor: pointer; border: none; font-size: 0.75em; }
-        .current-title { color: white; background: rgba(0,0,0,0.8); position: absolute; top: 0; left: 0; right: 0; padding: 12px; font-size: 0.9em; z-index: 10; border-bottom: 1px solid #334155; }
-        .empty-hint { color: #94a3b8; font-size: 0.8em; margin-left: 20px; }
+        :root {
+            --primary: #3b82f6;
+            --primary-hover: #2563eb;
+            --bg-body: #f1f5f9;
+            --bg-card: #ffffff;
+            --bg-player: #0f172a;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --border-light: #e2e8f0;
+            --border-focus: #cbd5e1;
+            --radius-md: 8px;
+            --radius-lg: 16px;
+            --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -1px rgba(0,0,0,0.03);
+            --shadow-xl: 0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; 
+            background: var(--bg-body); 
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        .app-container {
+            display: flex;
+            gap: 20px;
+            width: 100%;
+            max-width: 1600px;
+            height: calc(100vh - 40px);
+            padding: 0 20px;
+        }
+
+        /* --- Sidebar (Directory Tree) --- */
+        .sidebar { 
+            flex: 0 0 380px; 
+            background: var(--bg-card); 
+            border-radius: var(--radius-lg); 
+            box-shadow: var(--shadow-md); 
+            display: flex; 
+            flex-direction: column;
+            overflow: hidden;
+            border: 1px solid var(--border-light);
+        }
+
+        .sidebar-header {
+            padding: 20px;
+            border-bottom: 1px solid var(--border-light);
+            background: #f8fafc;
+        }
+
+        .header-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 8px;
+        }
+
+        .home-link { 
+            font-size: 13px; text-decoration: none; color: var(--primary); 
+            font-weight: 600; display: inline-flex; align-items: center; gap: 4px;
+            background: #eff6ff; padding: 4px 10px; border-radius: 20px; transition: 0.2s;
+        }
+        .home-link:hover { background: #dbeafe; color: var(--primary-hover); }
+
+        h1 { color: var(--text-main); font-size: 18px; font-weight: 700; line-height: 1.3; }
+        .link-id-badge { display: inline-block; font-family: ui-monospace, monospace; color: var(--text-muted); font-size: 12px; margin-top: 4px; background: #e2e8f0; padding: 2px 6px; border-radius: 4px; }
+
+        .tree-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 15px 20px;
+        }
+        
+        /* Custom Scrollbar for Tree */
+        .tree-container::-webkit-scrollbar { width: 6px; }
+        .tree-container::-webkit-scrollbar-track { background: transparent; }
+        .tree-container::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        .tree-container::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+        /* Tree Styles */
+        .folder-section { 
+            margin-top: 8px; 
+            margin-left: 8px; 
+            border-left: 2px solid #f1f5f9; 
+            padding-left: 12px; 
+        }
+        .folder-title { 
+            font-size: 14px; font-weight: 600; color: #334155; 
+            margin-bottom: 6px; display: flex; align-items: center; 
+            padding: 6px 0; border-radius: 6px; gap: 6px;
+        }
+        .folder-icon { color: #f59e0b; flex-shrink: 0; }
+
+        .file-list { list-style: none; margin-left: 4px; display: flex; flex-direction: column; gap: 2px; }
+        .file-item { 
+            padding: 8px 10px; border-radius: var(--radius-md); 
+            display: flex; justify-content: space-between; align-items: center; 
+            transition: background 0.2s; gap: 10px;
+        }
+        .file-item:hover { background: #f8fafc; box-shadow: inset 0 0 0 1px #f1f5f9; }
+        
+        .file-name { 
+            color: #475569; font-size: 13px; font-weight: 500;
+            overflow: hidden; text-overflow: ellipsis; white-space: nowrap; 
+            flex: 1; display: flex; align-items: center; gap: 8px;
+        }
+        .file-icon { color: var(--primary); flex-shrink: 0; opacity: 0.8; }
+
+        .play-btn { 
+            background: #eff6ff; color: var(--primary); padding: 5px 12px; 
+            border-radius: 20px; cursor: pointer; border: 1px solid transparent; 
+            font-size: 12px; font-weight: 600; transition: all 0.2s;
+            display: flex; align-items: center; gap: 4px;
+        }
+        .file-item:hover .play-btn { background: var(--primary); color: white; box-shadow: 0 2px 4px rgba(59,130,246,0.3); }
+
+        .empty-hint { color: #94a3b8; font-size: 13px; padding: 10px; font-style: italic; }
+
+        /* --- Player Area --- */
+        .player-area { 
+            flex: 1; 
+            background: var(--bg-player); 
+            border-radius: var(--radius-lg); 
+            overflow: hidden; 
+            position: relative; 
+            box-shadow: var(--shadow-xl);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid #1e293b;
+        }
+        
+        video { 
+            width: 100%; height: 100%; 
+            object-fit: contain; /* Ensures video isn't cropped */
+            background: #000;
+        }
+
+        .current-title { 
+            color: rgba(255,255,255,0.9); 
+            background: linear-gradient(to bottom, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0) 100%); 
+            position: absolute; top: 0; left: 0; right: 0; 
+            padding: 20px 20px 40px 20px; font-size: 16px; font-weight: 500;
+            z-index: 10; pointer-events: none;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.8);
+            display: flex; align-items: center; gap: 8px;
+        }
+
+        /* --- Responsive Design --- */
+        @media (max-width: 900px) {
+            body { height: auto; overflow: auto; padding: 0; background: var(--bg-card); }
+            .app-container { flex-direction: column-reverse; height: auto; gap: 0; padding: 0; margin: 0; max-width: 100%; }
+            .player-area { 
+                border-radius: 0; height: 35vh; min-height: 250px; 
+                position: sticky; top: 0; z-index: 50; border: none; border-bottom: 1px solid #1e293b;
+            }
+            .sidebar { flex: none; border-radius: 0; border: none; box-shadow: none; overflow: visible; }
+            .tree-container { overflow-y: visible; padding-bottom: 40px; }
+        }
     </style>
 </head>
 <body>
-    <div class="sidebar">
-        <h1>
-            {% set share_name = results.tree.caLst[0].caName if (results.tree and results.tree.caLst and results.tree.caLst|length > 0) else (results.tree.coLst[0].coName if (results.tree and results.tree.coLst and results.tree.coLst|length > 0) else link_id) %}
-            <span>{{ share_name }} <small style="font-weight: normal; color: #94a3b8; font-size: 0.6em;">{{ link_id }}</small></span>
-            <a href="/" class="home-link">返回首页</a>
-        </h1>
+    <div class="app-container">
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <div class="header-top">
+                    {% set share_name = results.tree.caLst[0].caName if (results.tree and results.tree.caLst and results.tree.caLst|length > 0) else (results.tree.coLst[0].coName if (results.tree and results.tree.coLst and results.tree.coLst|length > 0) else link_id) %}
+                    <a href="/" class="home-link">
+                        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+                        返回首页
+                    </a>
+                </div>
+                <h1>{{ share_name }}</h1>
+                <span class="link-id-badge">ID: {{ link_id }}</span>
+            </div>
 
-        {% macro render_tree(node) %}
-            {% if node %}
-                {# 渲染当前层级的文件 #}
-                {% if node.coLst %}
-                    <ul class="file-list">
-                        {% for file in node.coLst %}
-                        <li class="file-item">
-                            <span class="file-name">{{ file.coName }}</span>
-                            <button class="play-btn" onclick="playVideo('{{ link_id }}', '{{ file.coID }}', '{{ file.coName }}')">播放</button>
-                        </li>
-                        {% endfor %}
-                    </ul>
+            <div class="tree-container root-container">
+                {% macro render_tree(node) %}
+                    {% if node %}
+                        {# 渲染当前层级的文件 #}
+                        {% if node.coLst %}
+                            <ul class="file-list">
+                                {% for file in node.coLst %}
+                                <li class="file-item">
+                                    <span class="file-name" title="{{ file.coName }}">
+                                        <svg class="file-icon" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path><path stroke-linecap="round" stroke-linejoin="round" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                        {{ file.coName }}
+                                    </span>
+                                    <button class="play-btn" onclick="playVideo('{{ link_id }}', '{{ file.coID }}', '{{ file.coName }}')">
+                                        播放
+                                    </button>
+                                </li>
+                                {% endfor %}
+                            </ul>
+                        {% endif %}
+
+                        {# 递归渲染子文件夹 #}
+                        {% if node.caLst %}
+                            {% for sub in node.caLst %}
+                            <div class="folder-section" id="folder-{{ sub.caID }}">
+                                <div class="folder-title">
+                                    <svg class="folder-icon" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"></path></svg>
+                                    {{ sub.caName }}
+                                </div>
+                                {{ render_tree(sub.data) }}
+                            </div>
+                            {% endfor %}
+                        {% endif %}
+
+                        {% if not node.coLst and not node.caLst %}
+                            <div class="empty-hint">(空目录)</div>
+                        {% endif %}
+                    {% else %}
+                        <div class="empty-hint">(无数据)</div>
+                    {% endif %}
+                {% endmacro %}
+
+                {% if results.tree %}
+                    {{ render_tree(results.tree) }}
+                {% else %}
+                    <div class="empty-hint">该分享未抓取到有效内容，请尝试删除 data 目录后重试。</div>
                 {% endif %}
-
-                {# 递归渲染子文件夹 #}
-                {% if node.caLst %}
-                    {% for sub in node.caLst %}
-                    <div class="folder-section" id="folder-{{ sub.caID }}">
-                        <div class="folder-title">{{ sub.caName }}</div>
-                        {{ render_tree(sub.data) }}
-                    </div>
-                    {% endfor %}
-                {% endif %}
-
-                {% if not node.coLst and not node.caLst %}
-                    <div class="empty-hint">(空目录)</div>
-                {% endif %}
-            {% else %}
-                <div class="empty-hint">(无数据)</div>
-            {% endif %}
-        {% endmacro %}
-
-        <div class="root-container">
-            {% if results.tree %}
-                {{ render_tree(results.tree) }}
-            {% else %}
-                <div class="empty-hint">该分享未抓取到有效内容，请尝试删除 data 目录后重试。</div>
-            {% endif %}
+            </div>
         </div>
-    </div>
 
-    <div class="player-area">
-        <div id="videoTitle" class="current-title">等待播放...</div>
-        <video id="video" controls></video>
+        <div class="player-area">
+            <div id="videoTitle" class="current-title">
+                <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M7 4v16M17 4v16M3 8h4m10 0h4M3 12h18M3 16h4m10 0h4M4 20h16a1 1 0 001-1V5a1 1 0 00-1-1H4a1 1 0 00-1 1v14a1 1 0 001 1z"></path></svg>
+                等待选择视频播放...
+            </div>
+            <video id="video" controls></video>
+        </div>
     </div>
 
     <script>
@@ -481,7 +959,8 @@ VIEW_HTML = r"""
         var hls = new Hls();
 
         function playVideo(lid, coId, coName) {
-            document.getElementById('videoTitle').innerText = '正在加载: ' + coName;
+            // 更新标题（保留了原有的文本更新逻辑，并附加上图标）
+            document.getElementById('videoTitle').innerHTML = '<svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="margin-right:8px;"><path stroke-linecap="round" stroke-linejoin="round" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path><path stroke-linecap="round" stroke-linejoin="round" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg> 正在加载: ' + coName;
             var url = '/play/' + lid + '/' + coId + '/' + encodeURIComponent(coName);
             
             if (Hls.isSupported()) {
@@ -515,8 +994,10 @@ VIEW_HTML = r"""
                 const el = document.getElementById(targetId);
                 if (el) {
                     setTimeout(() => {
+                        // 滚动到该元素并在树视图中居中
                         el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                        el.style.background = '#fef9c3'; // 黄色背景高亮
+                        // 浅黄色背景高亮，兼容深色/浅色模式过渡
+                        el.style.background = '#fef9c3'; 
                         el.style.transition = 'background 2s';
                         setTimeout(() => el.style.background = 'transparent', 2000);
                     }, 500);
