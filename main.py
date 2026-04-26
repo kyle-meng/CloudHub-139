@@ -105,15 +105,30 @@ DASHBOARD_HTML = r"""
 <body>
     <div class="dashboard">
         <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 20px;">
-            <h1 style="margin: 0;">我的云端分享库</h1>
+            <h1 style="margin: 0; background: linear-gradient(135deg, #1e293b 0%, #3b82f6 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">139 云影聚合中心</h1>
             <div style="text-align: right;">
                 <div style="font-size: 13px; color: #94a3b8; font-weight: 500;">库总大小：</div>
                 <div style="font-size: 22px; font-weight: 800; color: #3b82f6; letter-spacing: -0.5px;">{{ total_size }}</div>
             </div>
         </div>
-        <p style="color: #64748b; font-size: 14px; margin: -10px 0 30px 0; font-style: italic; border-left: 3px solid #3b82f6; padding-left: 12px; line-height: 1.6;">
+        <p style="color: #64748b; font-size: 14px; margin: -10px 0 20px 0; font-style: italic; border-left: 3px solid #3b82f6; padding-left: 12px; line-height: 1.6;">
             “独乐乐不如众乐乐 —— 欢迎分享<strong>永久有效</strong>的优质 Link ID，共建海量云端影院。”
         </p>
+
+        <div style="display: flex; gap: 10px; margin-bottom: 30px; flex-wrap: wrap;">
+            <span style="background: #eff6ff; color: #1d4ed8; padding: 5px 14px; border-radius: 20px; font-size: 12px; font-weight: bold; border: 1px solid #bfdbfe; display: flex; align-items: center; gap: 5px;">
+                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path></svg>
+                无需转存
+            </span>
+            <span style="background: #f0fdf4; color: #15803d; padding: 5px 14px; border-radius: 20px; font-size: 12px; font-weight: bold; border: 1px solid #bbf7d0; display: flex; align-items: center; gap: 5px;">
+                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z"></path></svg>
+                不占空间
+            </span>
+            <span style="background: #fdf2f8; color: #be185d; padding: 5px 14px; border-radius: 20px; font-size: 12px; font-weight: bold; border: 1px solid #fbcfe8; display: flex; align-items: center; gap: 5px;">
+                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path></svg>
+                链接挂载播放
+            </span>
+        </div>
 
         <!-- 搜索入口 -->
         <div class="search-section" style="margin-bottom: 25px;">
