@@ -17,11 +17,11 @@
 *集成 HLS.js 的在线播放器，支持 1080P 高清解析与无缝预览。*
 
 ### 4. 核心功能演示
-![抓取并播放](assets/抓取资源并播放.mp4)
+<video src="assets/抓取资源并播放.mp4" width="100%" controls></video>
 *演示从粘贴链接到自动抓取、解析并开始 HLS 播放的全过程。*
 
 ### 5. 极速播放体验
-![视频播放](assets/搜索并播放.mp4)
+<video src="assets/搜索并播放.mp4" width="100%" controls></video>
 *流畅的在线播放体验，支持重写 HLS 鉴权链接。*
 
 
