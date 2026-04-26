@@ -3,12 +3,8 @@ import json
 import os
 import gzip
 import io
-try:
-    from Crypto.Cipher import AES
-    from Crypto.Util.Padding import pad, unpad
-except ImportError:
-    from Cryptodome.Cipher import AES
-    from Cryptodome.Util.Padding import pad, unpad
+from Crypto.Cipher import AES
+from Crypto.Util.Padding import pad, unpad
 
 
 class YunCrypto:

@@ -11,3 +11,5 @@ m3u8_downloads/
 data/
 .venv/
 test/
+alist/
+scratch
