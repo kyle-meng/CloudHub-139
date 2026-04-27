@@ -6,7 +6,7 @@ import urllib.parse
 from datetime import datetime
 from collections import deque
 from dotenv import load_dotenv
-from yun_client import YunClient
+from .client import YunClient
 from flask import Flask, render_template_string, Response, request, redirect, url_for
 
 app = Flask(__name__)
@@ -1408,7 +1408,7 @@ def main():
     print("📍 访问地址: http://127.0.0.1:5000")
     print("="*40 + "\n")
     
-    app.run(host='0.0.0.0', port=5000, debug=True   )
+    app.run(host='0.0.0.0', port=5000, debug=False)
 
 if __name__ == "__main__":
     main()

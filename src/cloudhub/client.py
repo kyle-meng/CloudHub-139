@@ -1,6 +1,6 @@
 import requests
 import json
-from yun_crypto import YunCrypto
+from .crypto import YunCrypto
 
 class YunClient:
     def __init__(self, auth_token: str, account: str):

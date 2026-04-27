@@ -1,0 +1,33 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "cloudhub-139"
+version = "1.0.0"
+authors = [
+  { name="Kyle Meng", email="meng@example.com" },
+]
+description = "A powerful 139 Cloud link parser and HLS stream aggregator."
+readme = "README.md"
+requires-python = ">=3.8"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+    "requests",
+    "pycryptodome",
+    "flask",
+    "python-dotenv",
+]
+
+[project.urls]
+"Homepage" = "https://github.com/kyle-meng/CloudHub-139"
+
+[project.scripts]
+cloudhub-139 = "cloudhub.app:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
