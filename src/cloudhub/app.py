@@ -16,7 +16,8 @@ app = Flask(__name__)
 # 全局共享配置
 GLOBAL_CONFIG = {
     "interval": 2,
-    "full_scan": False
+    "full_scan": False,
+    "demo_mode": False,
 }
 
 # 全局共享状态
@@ -283,7 +284,7 @@ DASHBOARD_HTML = r"""
         <header class="header">
             <h1>139 云影聚合中心</h1>
             <div class="stat-box">
-                <div class="stat-label">库总大小</div>
+                <div class="stat-label">当前聚合库总大小</div>
                 <div class="stat-value">{{ total_size }}</div>
             </div>
         </header>
@@ -291,6 +292,26 @@ DASHBOARD_HTML = r"""
         <div class="subtitle">
             “独乐乐不如众乐乐 —— 欢迎分享<strong>永久有效</strong>的优质 Link ID，共建海量云端影院。”
         </div>
+
+        {% if demo_mode %}
+        <div style="background:linear-gradient(135deg,#fff7ed,#fef3c7);border:1.5px solid #f59e0b;border-radius:12px;padding:18px 22px;margin-bottom:24px;display:flex;gap:16px;align-items:flex-start;">
+            <span style="font-size:28px;flex-shrink:0;">🌐</span>
+            <div style="flex:1;">
+                <div style="font-size:15px;font-weight:800;color:#92400e;margin-bottom:6px;">资源交流模式已开启</div>
+                <div style="font-size:13px;color:#78350f;line-height:1.8;">
+                    ✅ 可正常使用：全库搜索、浏览目录、下载库文件、上传本地库文件。<br>
+                    ⛔️ 已禁用：添加分享库（防止抓取滥用）、在线播放（无账号鉴权）。<br>
+                    📦 期待您上传自己的本地库文件ZIP，共创更大的影视库！谢谢❤️
+                </div>
+                <div style="margin-top:12px;padding-top:12px;border-top:1px dashed #f59e0b;font-size:12px;color:#92400e;">
+                    <strong>💡 如何贡献资源？</strong><br>
+                    1. 在本地配置账号启动程序并使用『添加分享库』完成抓取。<br>
+                    2. 运行指令导出备份：<code>cloudhub-139 --export my_lib.zip</code><br>
+                    3. 在此处『上传』您导出的 ZIP 文件即可。
+                </div>
+            </div>
+        </div>
+        {% endif %}
 
         <div class="tags-wrapper">
             <span class="tag tag-blue">
@@ -324,17 +345,29 @@ DASHBOARD_HTML = r"""
                     <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"></path></svg>
                     添加资源
                 </div>
-                <form id="add-form" class="form-group">
-                    <input type="text" id="link-id-input" name="link_id" placeholder="粘贴分享 ID/链接" required>
-                    <button type="submit" class="btn-success">抓取</button>
+                <form id="add-form" class="form-group" style="flex-direction: column;" {% if demo_mode %}onsubmit="return false;"{% endif %}>
+                    <input type="text" id="link-id-input" name="link_id" placeholder="{% if demo_mode %}资源交流模式下无法添加{% else %}粘贴分享 ID/链接{% endif %}" {% if demo_mode %}disabled{% endif %} required>
+                    <button type="submit" class="btn-success" style="width:100%;{% if demo_mode %}opacity:0.45;cursor:not-allowed;{% endif %}" {% if demo_mode %}disabled title="资源交流模式下已禁用，请配置账号启动"{% endif %}>添加分享库</button>
                 </form>
-                
-                <div class="divider"></div>
-                
-                <form id="upload-form" enctype="multipart/form-data" class="form-group">
-                    <input type="file" name="file" accept=".json" required>
-                    <button type="submit" class="btn-outline">导入本地 JSON</button>
+            </div>
+        </div>
+
+        <div class="action-card" style="margin-bottom:25px;">
+            <div class="action-title">
+                <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 19a2 2 0 01-2-2V7a2 2 0 012-2h4l2 2h4a2 2 0 012 2v1M5 19h14a2 2 0 002-2v-5a2 2 0 00-2-2H9a2 2 0 00-2 2v5a2 2 0 01-2 2z"></path></svg>
+                库文件管理
+            </div>
+            <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
+                <form id="upload-form" enctype="multipart/form-data" class="form-group" style="flex:1;min-width:220px;margin-bottom:0;">
+                    <input type="file" name="file" accept=".json,.zip" required>
+                    <button type="submit" class="btn-outline">上传 JSON / ZIP</button>
                 </form>
+                <a href="/export" download
+                   style="flex-shrink:0;padding:10px 20px;border-radius:8px;font-size:14px;font-weight:600;color:#6366f1;border:1px solid #6366f1;text-decoration:none;display:inline-flex;align-items:center;gap:6px;background:white;transition:all 0.2s;"
+                   onmouseover="this.style.background='#e0e7ff'" onmouseout="this.style.background='white'">
+                    <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                    下载库文件
+                </a>
             </div>
         </div>
 
@@ -484,7 +517,8 @@ DASHBOARD_HTML = r"""
             btn.innerText = '上传中...';
             
             // 点击后展开终端
-            showTerminal('准备导入本地 JSON 文件...');
+            const fname = e.target.querySelector('input[type=file]').files[0]?.name || '';
+            showTerminal(`准备导入文件: ${fname} ...`);
 
             const appendLog = (msg, isError = false) => {
                 const div = document.createElement('div');
@@ -1027,9 +1061,10 @@ def dashboard():
         total_bytes += get_tree_size(tree)
     
     return render_template_string(
-        DASHBOARD_HTML, 
-        links=shared_state["links"], 
-        total_size=format_size(total_bytes)
+        DASHBOARD_HTML,
+        links=shared_state["links"],
+        total_size=format_size(total_bytes),
+        demo_mode=GLOBAL_CONFIG["demo_mode"]
     )
 
 @app.route("/search")
@@ -1103,6 +1138,8 @@ def background_fetch(client, link_id):
 
 @app.route("/add", methods=["POST"])
 def add_link():
+    if GLOBAL_CONFIG["demo_mode"]:
+        return "资源交流模式下无法添加分享库", 403
     raw_input = request.form.get("link_id", "").strip()
     if not raw_input:
         return "ID 或链接不能为空", 400
@@ -1155,44 +1192,80 @@ def add_link():
 
 @app.route("/upload", methods=["POST"])
 def upload_file():
+    import tempfile
     if 'file' not in request.files:
         return "没有文件", 400
     file = request.files['file']
     if file.filename == '':
         return "未选择文件", 400
-    
+
+    filename = file.filename.lower()
+
+    # --- ZIP 压缩包导入 ---
+    if filename.endswith('.zip'):
+        try:
+            with tempfile.NamedTemporaryFile(suffix='.zip', delete=False) as tmp:
+                file.save(tmp.name)
+                tmp_path = tmp.name
+            from .manager import import_library
+            import_library(tmp_path, merge=True)
+            os.unlink(tmp_path)
+            # 重新加载所有库到内存
+            data_dir = "data"
+            if os.path.exists(data_dir):
+                for lid in os.listdir(data_dir):
+                    cache_file = os.path.join(data_dir, lid, "fetched_results.json")
+                    if os.path.exists(cache_file) and lid not in shared_state["links"]:
+                        with open(cache_file, "r", encoding="utf-8") as f:
+                            shared_state["links"][lid] = json.load(f)
+            log_msg(f"📦 [Import] 压缩包导入完成，已加载 {len(shared_state['links'])} 个分享")
+            return redirect("/")
+        except Exception as e:
+            return f"ZIP 导入失败: {e}", 400
+
+    # --- JSON 单文件导入 ---
     try:
-        # 读取并解析 JSON
         data = json.load(file)
         link_id = data.get("linkID")
         if not link_id or "tree" not in data:
             return "JSON 格式不正确 (必须包含 linkID 和 tree)", 400
-            
-        # 0. 查重逻辑
+
         if link_id in shared_state["links"]:
             return f"导入失败：ID {link_id} 已存在于库中", 400
 
-        # 1. 建立目录并保存
         link_dir = os.path.join("data", link_id)
         if not os.path.exists(link_dir):
             os.makedirs(link_dir)
-            
+
         output_path = os.path.join(link_dir, "fetched_results.json")
         with open(output_path, "w", encoding="utf-8") as f:
             json.dump(data, f, indent=2, ensure_ascii=False)
-            
-        # 2. 更新 links.json 配置
+
         name = get_share_name_from_results(data)
         if name:
             update_links_config(link_id, name)
-            
-        # 3. 更新内存状态
+
         shared_state["links"][link_id] = data
         log_msg(f"📥 [Import] 成功从本地文件导入分享: {link_id} ({name or '未知名称'})")
-        
         return redirect("/")
     except Exception as e:
         return f"导入失败: {e}", 400
+
+@app.route("/export")
+def export_zip():
+    """将当前全量库数据打包为 ZIP 流式下载"""
+    import tempfile
+    from .manager import export_library
+    from flask import send_file
+    from datetime import datetime
+    try:
+        tmp = tempfile.NamedTemporaryFile(suffix='.zip', delete=False)
+        tmp.close()
+        export_library(tmp.name)
+        filename = f"cloudhub_library_{datetime.now().strftime('%Y%m%d_%H%M%S')}.zip"
+        return send_file(tmp.name, as_attachment=True, download_name=filename, mimetype='application/zip')
+    except Exception as e:
+        return f"导出失败: {e}", 500
 
 @app.route("/view/<link_id>")
 def view_link(link_id):
@@ -1202,6 +1275,8 @@ def view_link(link_id):
 
 @app.route("/play/<link_id>/<co_id>/<path:co_name>")
 def play_video(link_id, co_id, co_name):
+    if GLOBAL_CONFIG["demo_mode"]:
+        return "资源交流模式下播放功能已禁用", 403
     client = shared_state["client"]
     
     try:
@@ -1370,6 +1445,7 @@ def main():
     parser.add_argument("--token", help="139云盘 Authorization Token")
     parser.add_argument("--interval", type=float, default=2.0, help="递归抓取时的请求间隔秒数 (默认: 2.0)")
     parser.add_argument("--full-scan", action="store_true", help="保留全量原始数据 (不推荐，体积会非常大)")
+    parser.add_argument("--demo", action="store_true", help="开启资源交流模式（无需账号，禁用抓取和播放）")
     parser.add_argument("--export", help="导出库数据到指定的压缩包文件名")
     parser.add_argument("--import-lib", dest="import_file", help="从指定的压缩包导入/合并库数据")
     args = parser.parse_args()
@@ -1390,10 +1466,11 @@ def main():
     # 优先级: 命令行参数 > 环境变量
     ACCOUNT = args.account or os.getenv("YUN_ACCOUNT")
     AUTH_TOKEN = args.token or os.getenv("YUN_AUTH_TOKEN")
-    
-    if not ACCOUNT or not AUTH_TOKEN:
-        print("❌ 错误: 未提供账号信息。请通过命令行参数 (--account, --token) 或 .env 文件设置。")
-        return
+
+    # 自动或手动进入资源交流模式
+    if args.demo or not ACCOUNT or not AUTH_TOKEN:
+        GLOBAL_CONFIG["demo_mode"] = True
+        print("🌐 资源交流模式已开启（无账号配置）。添加分享库和播放功能已禁用。")
 
     # 加载分享链接 ID 列表
     LINK_IDS = []
@@ -1412,45 +1489,59 @@ def main():
     SKEY = os.getenv("YUN_SKEY")
 
     if not all([ACCOUNT, AUTH_TOKEN, LINK_IDS]):
-        print("❌ 错误: .env 参数不足。")
-        return
+        if GLOBAL_CONFIG["demo_mode"]:
+            # 资源交流模式下加载已有库文件，跳过报错
+            pass
+        else:
+            print("❌ 错误: .env 参数不足。")
+            return
 
-    client = YunClient(AUTH_TOKEN, ACCOUNT)
-    if SIGN and SKEY:
-        client.set_signatures(SIGN, SKEY)
-    
-    shared_state["client"] = client
+    if not GLOBAL_CONFIG["demo_mode"]:
+        client = YunClient(AUTH_TOKEN, ACCOUNT)
+        if SIGN and SKEY:
+            client.set_signatures(SIGN, SKEY)
+        shared_state["client"] = client
 
-    # 初始化 Link 数据
-    if not os.path.exists("data"):
-        os.makedirs("data")
+    # 加载本地缓存（资源交流模式下仅加载已有缓存，不停线抓取）
+    if GLOBAL_CONFIG["demo_mode"]:
+        data_dir = "data"
+        if os.path.exists(data_dir):
+            for lid in os.listdir(data_dir):
+                cache_file = os.path.join(data_dir, lid, "fetched_results.json")
+                if os.path.exists(cache_file):
+                    try:
+                        with open(cache_file, "r", encoding="utf-8") as f:
+                            data = json.load(f)
+                        if "tree" in data:
+                            print(f"✅ [Demo] 加载库: {lid}")
+                            shared_state["links"][lid] = data
+                    except Exception as e:
+                        print(f"⚠️ [Demo] 加载 {lid} 失败: {e}")
+    else:
+        for lid in LINK_IDS:
+            link_dir = os.path.join("data", lid)
+            link_file = os.path.join(link_dir, "fetched_results.json")
 
-    for lid in LINK_IDS:
-        link_dir = os.path.join("data", lid)
-        link_file = os.path.join(link_dir, "fetched_results.json")
-        
-        if os.path.exists(link_file):
-            with open(link_file, "r", encoding="utf-8") as f:
-                data = json.load(f)
-            
-            # 校验缓存格式是否包含最新的 tree 结构
-            if "tree" in data:
-                print(f"✅ [Local] 发现本地缓存 ({lid})，跳过抓取。")
-                shared_state["links"][lid] = data
-                # 检查并补全配置中的名称
-                name = get_share_name_from_results(data)
-                if name:
-                    update_links_config(lid, name)
+            if os.path.exists(link_file):
+                with open(link_file, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+
+                if "tree" in data:
+                    print(f"✅ [Local] 发现本地缓存 ({lid})，跳过抓取。")
+                    shared_state["links"][lid] = data
+                    name = get_share_name_from_results(data)
+                    if name:
+                        update_links_config(lid, name)
+                else:
+                    print(f"⚠️ [Local] 缓存格式已过期 ({lid})，重新执行深度递归抓取...")
+                    results = fetch_and_save_share_info(client, lid, link_dir)
+                    if results:
+                        shared_state["links"][lid] = results
             else:
-                print(f"⚠️ [Local] 缓存格式已过期 ({lid})，重新执行深度递归抓取...")
+                print(f"🌐 [Online] 本地无数据 ({lid})，开始深度递归抓取...")
                 results = fetch_and_save_share_info(client, lid, link_dir)
                 if results:
                     shared_state["links"][lid] = results
-        else:
-            print(f"🌐 [Online] 本地无数据 ({lid})，开始深度递归抓取...")
-            results = fetch_and_save_share_info(client, lid, link_dir)
-            if results:
-                shared_state["links"][lid] = results
 
     print("\n" + "="*40)
     print(f"🚀 CloudHub-139 就绪!")
