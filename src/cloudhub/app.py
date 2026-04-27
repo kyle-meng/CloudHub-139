@@ -8,6 +8,7 @@ from datetime import datetime
 from collections import deque
 from dotenv import load_dotenv
 from .client import YunClient
+from .manager import export_library, import_library
 from flask import Flask, render_template_string, Response, request, redirect, url_for
 
 app = Flask(__name__)
@@ -15,6 +16,7 @@ app = Flask(__name__)
 # 全局共享配置
 GLOBAL_CONFIG = {
     "interval": 2,
+    "full_scan": False
 }
 
 # 全局共享状态
@@ -1259,8 +1261,22 @@ def recursive_fetch(client, link_id, p_ca_id="root", depth=0, max_depth=3, save_
         if not data:
             return {"caLst": [], "coLst": []}
         
-        folders = data.get("caLst") or []
-        files = data.get("coLst") or []
+        raw_folders = data.get("caLst") or []
+        raw_files = data.get("coLst") or []
+        
+        # 过滤元数据：若开启 --full-scan 则保留全量，否则仅保留关键字段
+        if GLOBAL_CONFIG.get("full_scan"):
+            files = raw_files
+        else:
+            files = [{
+                "coID": f.get("coID"),
+                "coName": f.get("coName"),
+                "coType": f.get("coType"),
+                "coSuffix": f.get("coSuffix"),
+                "coSize": f.get("coSize"),
+                "udTime": f.get("udTime"),
+                "path": f.get("path")
+            } for f in raw_files]
         
         result = {
             "caLst": [],
@@ -1268,15 +1284,15 @@ def recursive_fetch(client, link_id, p_ca_id="root", depth=0, max_depth=3, save_
         }
         
         # 打印当前层级信息
-        ca_name = "Root" if p_ca_id == "root" else (folders[0].get("caName") if folders else "Subfolder")
-        log_msg(f"[*] 层级 {depth}: {ca_name} (文件夹:{len(folders)}, 文件:{len(files)})")
+        ca_name = "Root" if p_ca_id == "root" else (raw_folders[0].get("caName") if raw_folders else "Subfolder")
+        log_msg(f"[*] 层级 {depth}: {ca_name} (文件夹:{len(raw_folders)}, 文件:{len(files)})")
 
         # 遍历所有文件夹 (移除 [:20] 限制，增加请求间隔)
         count = 0
-        for folder in folders:
+        for folder in raw_folders:
             count += 1
             if count % 10 == 0:
-                log_msg(f"    - 正在处理 {ca_name} 的第 {count}/{len(folders)} 个文件夹...")
+                log_msg(f"    - 正在处理 {ca_name} 的第 {count}/{len(raw_folders)} 个文件夹...")
             
             # 添加小延迟，防止频率过高被封
             time.sleep(GLOBAL_CONFIG["interval"])
@@ -1353,10 +1369,22 @@ def main():
     parser.add_argument("--account", help="139云盘账号 (手机号)")
     parser.add_argument("--token", help="139云盘 Authorization Token")
     parser.add_argument("--interval", type=float, default=2.0, help="递归抓取时的请求间隔秒数 (默认: 2.0)")
+    parser.add_argument("--full-scan", action="store_true", help="保留全量原始数据 (不推荐，体积会非常大)")
+    parser.add_argument("--export", help="导出库数据到指定的压缩包文件名")
+    parser.add_argument("--import-lib", dest="import_file", help="从指定的压缩包导入/合并库数据")
     args = parser.parse_args()
+
+    # 处理导出/导入子命令并直接退出
+    if args.export:
+        export_library(args.export)
+        return
+    if args.import_file:
+        import_library(args.import_file)
+        return
 
     # 更新全局配置
     GLOBAL_CONFIG["interval"] = args.interval
+    GLOBAL_CONFIG["full_scan"] = args.full_scan
 
     load_dotenv()
     # 优先级: 命令行参数 > 环境变量
@@ -1428,6 +1456,7 @@ def main():
     print(f"🚀 CloudHub-139 就绪!")
     print(f"📍 访问地址: http://{args.host}:{args.port}")
     print(f"⏱️ 抓取间隔: {args.interval}s")
+    print(f"💾 抓取模式: {'全量保存' if args.full_scan else '精简模式'}")
     print("="*40 + "\n")
     
     if args.debug:
