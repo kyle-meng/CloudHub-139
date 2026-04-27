@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "cloudhub-139"
-version = "1.0.0"
+version = "1.0.1"
 authors = [
   { name="Kyle Meng", email="meng@example.com" },
 ]
@@ -21,6 +21,7 @@ dependencies = [
     "pycryptodome",
     "flask",
     "python-dotenv",
+    "waitress",
 ]
 
 [project.urls]

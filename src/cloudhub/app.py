@@ -3,6 +3,7 @@ import json
 import time
 import threading
 import urllib.parse
+import argparse
 from datetime import datetime
 from collections import deque
 from dotenv import load_dotenv
@@ -10,6 +11,11 @@ from .client import YunClient
 from flask import Flask, render_template_string, Response, request, redirect, url_for
 
 app = Flask(__name__)
+
+# 全局共享配置
+GLOBAL_CONFIG = {
+    "interval": 2,
+}
 
 # 全局共享状态
 shared_state = {
@@ -1273,7 +1279,7 @@ def recursive_fetch(client, link_id, p_ca_id="root", depth=0, max_depth=3, save_
                 log_msg(f"    - 正在处理 {ca_name} 的第 {count}/{len(folders)} 个文件夹...")
             
             # 添加小延迟，防止频率过高被封
-            time.sleep(2)
+            time.sleep(GLOBAL_CONFIG["interval"])
             
             sub_tree = recursive_fetch(client, link_id, folder.get("caID"), depth + 1, max_depth, save_cb)
             result["caLst"].append({
@@ -1340,20 +1346,35 @@ def fetch_and_save_share_info(client, link_id, output_dir):
     return full_results
 
 def main():
+    parser = argparse.ArgumentParser(description="CloudHub-139: 139云盘资源聚合中心")
+    parser.add_argument("--host", default="0.0.0.0", help="监听地址 (默认: 0.0.0.0)")
+    parser.add_argument("--port", type=int, default=5000, help="监听端口 (默认: 5000)")
+    parser.add_argument("--debug", action="store_true", help="开启 Flask 调试模式")
+    parser.add_argument("--account", help="139云盘账号 (手机号)")
+    parser.add_argument("--token", help="139云盘 Authorization Token")
+    parser.add_argument("--interval", type=float, default=2.0, help="递归抓取时的请求间隔秒数 (默认: 2.0)")
+    args = parser.parse_args()
+
+    # 更新全局配置
+    GLOBAL_CONFIG["interval"] = args.interval
+
     load_dotenv()
-    ACCOUNT = os.getenv("YUN_ACCOUNT")
-    AUTH_TOKEN = os.getenv("YUN_AUTH_TOKEN")
+    # 优先级: 命令行参数 > 环境变量
+    ACCOUNT = args.account or os.getenv("YUN_ACCOUNT")
+    AUTH_TOKEN = args.token or os.getenv("YUN_AUTH_TOKEN")
+    
+    if not ACCOUNT or not AUTH_TOKEN:
+        print("❌ 错误: 未提供账号信息。请通过命令行参数 (--account, --token) 或 .env 文件设置。")
+        return
+
     # 加载分享链接 ID 列表
     LINK_IDS = []
     if os.path.exists("links.json"):
         try:
             with open("links.json", "r", encoding="utf-8") as f:
-                config_data = json.load(f)
-                if isinstance(config_data, list):
-                    LINK_IDS = config_data
-                elif isinstance(config_data, dict):
-                    LINK_IDS = list(config_data.keys())
-            print(f"📂 [Config] 从 links.json 加载了 {len(LINK_IDS)} 个链接")
+                config = json.load(f)
+                if isinstance(config, dict):
+                    LINK_IDS = list(config.keys())
         except Exception as e:
             print(f"⚠️ [Config] 读取 links.json 失败: {e}")
     
@@ -1404,11 +1425,22 @@ def main():
                 shared_state["links"][lid] = results
 
     print("\n" + "="*40)
-    print(f"🚀 Web 服务就绪! 管理资源: {len(shared_state['links'])} 个分享链接")
-    print("📍 访问地址: http://127.0.0.1:5000")
+    print(f"🚀 CloudHub-139 就绪!")
+    print(f"📍 访问地址: http://{args.host}:{args.port}")
+    print(f"⏱️ 抓取间隔: {args.interval}s")
     print("="*40 + "\n")
     
-    app.run(host='0.0.0.0', port=5000, debug=False)
+    if args.debug:
+        app.run(host=args.host, port=args.port, debug=True)
+    else:
+        try:
+            from waitress import serve
+            print(f"💎 [Production] 正在通过 Waitress 启动生产级 WSGI 服务...")
+            serve(app, host=args.host, port=args.port)
+        except ImportError:
+            print("⚠️ [Warning] 未安装 waitress，将回退到 Flask 开发服务器。")
+            print("💡 建议运行: pip install waitress")
+            app.run(host=args.host, port=args.port, debug=False)
 
 if __name__ == "__main__":
     main()

@@ -2,3 +2,4 @@ requests
 pycryptodome
 flask
 python-dotenv
+waitress
