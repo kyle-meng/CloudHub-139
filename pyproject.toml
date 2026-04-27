@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "cloudhub-139"
 version = "1.0.3"
 authors = [
-  { name="Kyle Meng", email="meng@example.com" },
+  { name="Kyle Meng", email="kyle.meng@tuta.io" },
 ]
 description = "A powerful 139 Cloud link parser and HLS stream aggregator."
 readme = "README.md"
