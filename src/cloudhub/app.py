@@ -20,6 +20,12 @@ GLOBAL_CONFIG = {
     "demo_mode": False,
 }
 
+# 全局统计缓存 (避免主页重复计算导致卡顿)
+GLOBAL_STATS = {
+    "total_size": "0 B",
+    "link_count": 0
+}
+
 # 全局共享状态
 shared_state = {
     "client": None,
@@ -1063,17 +1069,24 @@ VIEW_HTML = r"""
 
 @app.route("/")
 def dashboard():
-    total_bytes = 0
-    for lid in shared_state["links"]:
-        tree = shared_state["links"][lid].get("tree", {})
-        total_bytes += get_tree_size(tree)
-    
     return render_template_string(
         DASHBOARD_HTML,
         links=shared_state["links"],
-        total_size=format_size(total_bytes),
+        total_size=GLOBAL_STATS["total_size"],
         demo_mode=GLOBAL_CONFIG["demo_mode"]
     )
+
+def refresh_global_stats():
+    """计算全库统计信息并存入缓存"""
+    total_bytes = 0
+    count = 0
+    for lid in shared_state["links"]:
+        count += 1
+        tree = shared_state["links"][lid].get("tree", {})
+        total_bytes += get_tree_size(tree)
+    GLOBAL_STATS["total_size"] = format_size(total_bytes)
+    GLOBAL_STATS["link_count"] = count
+    log_msg(f"📊 [Stats] 统计信息已更新: {GLOBAL_STATS['total_size']} / {count} 个分享")
 
 @app.route("/search")
 def search():
@@ -1122,18 +1135,18 @@ def search():
 def stream():
     """SSE 实时推送日志"""
     def event_stream():
-        last_idx = len(shared_state["logs"])
-        # 先推一次历史日志
-        for log in list(shared_state["logs"]):
-            yield f"data: {json.dumps({'type': 'log', 'content': log})}\n\n"
-        
-        while True:
-            if len(shared_state["logs"]) > last_idx:
-                for i in range(last_idx, len(shared_state["logs"])):
-                    event = shared_state["logs"][i]
-                    yield f"data: {json.dumps(event)}\n\n"
-                last_idx = len(shared_state["logs"])
-            time.sleep(0.5)
+        last_idx = 0
+        try:
+            while True:
+                if len(shared_state["logs"]) > last_idx:
+                    for i in range(last_idx, len(shared_state["logs"])):
+                        event = shared_state["logs"][i]
+                        yield f"data: {json.dumps(event)}\n\n"
+                    last_idx = len(shared_state["logs"])
+                time.sleep(0.5)
+        except (GeneratorExit, Exception):
+            # 客户端断开连接，释放线程
+            pass
             
     return Response(event_stream(), mimetype="text/event-stream")
 
@@ -1143,6 +1156,7 @@ def background_fetch(client, link_id):
     results = fetch_and_save_share_info(client, link_id, link_dir)
     if results:
         shared_state["links"][link_id] = results
+        refresh_global_stats()
 
 @app.route("/add", methods=["POST"])
 def add_link():
@@ -1229,6 +1243,7 @@ def upload_file():
                             if os.path.exists(cache_file) and lid not in shared_state["links"]:
                                 with open(cache_file, "r", encoding="utf-8") as f:
                                     shared_state["links"][lid] = json.load(f)
+                    refresh_global_stats()
                     log_msg(f"📦 [Import] 异步压缩包导入完成，已加载 {len(shared_state['links'])} 个分享")
                 except Exception as ex:
                     log_msg(f"❌ [Import] 后台导入失败: {ex}", is_error=True)
@@ -1264,6 +1279,7 @@ def upload_file():
             update_links_config(link_id, name)
 
         shared_state["links"][link_id] = data
+        refresh_global_stats()
         log_msg(f"📥 [Import] 成功从本地文件导入分享: {link_id} ({name or '未知名称'})")
         return redirect("/")
     except Exception as e:
@@ -1592,6 +1608,9 @@ def main():
                 results = fetch_and_save_share_info(client, lid, link_dir)
                 if results:
                     shared_state["links"][lid] = results
+
+    # 启动前计算一次统计信息
+    refresh_global_stats()
 
     print("\n" + "="*40)
     print(f"🚀 CloudHub-139 就绪!")
