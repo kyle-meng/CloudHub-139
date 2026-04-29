@@ -1215,21 +1215,31 @@ def upload_file():
             with tempfile.NamedTemporaryFile(suffix='.zip', delete=False) as tmp:
                 file.save(tmp.name)
                 tmp_path = tmp.name
-            from .manager import import_library
-            import_library(tmp_path, merge=True)
-            os.unlink(tmp_path)
-            # 重新加载所有库到内存
-            data_dir = "data"
-            if os.path.exists(data_dir):
-                for lid in os.listdir(data_dir):
-                    cache_file = os.path.join(data_dir, lid, "fetched_results.json")
-                    if os.path.exists(cache_file) and lid not in shared_state["links"]:
-                        with open(cache_file, "r", encoding="utf-8") as f:
-                            shared_state["links"][lid] = json.load(f)
-            log_msg(f"📦 [Import] 压缩包导入完成，已加载 {len(shared_state['links'])} 个分享")
-            return redirect("/")
+            
+            def async_import(path):
+                try:
+                    from .manager import import_library
+                    import_library(path, merge=True)
+                    os.unlink(path)
+                    # 重新加载所有库到内存
+                    data_dir = "data"
+                    if os.path.exists(data_dir):
+                        for lid in os.listdir(data_dir):
+                            cache_file = os.path.join(data_dir, lid, "fetched_results.json")
+                            if os.path.exists(cache_file) and lid not in shared_state["links"]:
+                                with open(cache_file, "r", encoding="utf-8") as f:
+                                    shared_state["links"][lid] = json.load(f)
+                    log_msg(f"📦 [Import] 异步压缩包导入完成，已加载 {len(shared_state['links'])} 个分享")
+                except Exception as ex:
+                    log_msg(f"❌ [Import] 后台导入失败: {ex}", is_error=True)
+
+            import threading
+            threading.Thread(target=async_import, args=(tmp_path,)).start()
+            
+            log_msg(f"⏳ [Import] 压缩包已接收，正在后台异步导入中，请关注终端输出...")
+            return "压缩包已上传，正在后台处理中，请稍后刷新页面查看", 200
         except Exception as e:
-            return f"ZIP 导入失败: {e}", 400
+            return f"ZIP 接收失败: {e}", 400
 
     # --- JSON 单文件导入 ---
     try:
@@ -1595,7 +1605,7 @@ def main():
         try:
             from waitress import serve
             print(f"💎 [Production] 正在通过 Waitress 启动生产级 WSGI 服务...")
-            serve(app, host=args.host, port=args.port)
+            serve(app, host=args.host, port=args.port, threads=16)
         except ImportError:
             print("⚠️ [Warning] 未安装 waitress，将回退到 Flask 开发服务器。")
             print("💡 建议运行: pip install waitress")
