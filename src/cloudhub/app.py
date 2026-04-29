@@ -1464,6 +1464,7 @@ def main():
     parser.add_argument("--interval", type=float, default=2.0, help="递归抓取时的请求间隔秒数 (默认: 2.0)")
     parser.add_argument("--full-scan", action="store_true", help="保留全量原始数据 (不推荐，体积稍大一点)")
     parser.add_argument("--demo", action="store_true", help="开启资源交流模式（无需账号，禁用抓取和播放）")
+    parser.add_argument("--threads", type=int, default=16, help="Waitress 服务工作线程数 (默认: 16)")
     parser.add_argument("--export", help="导出库数据到指定的压缩包文件名")
     parser.add_argument("--import-lib", dest="import_file", help="从指定的压缩包导入/合并库数据")
     args = parser.parse_args()
@@ -1604,8 +1605,8 @@ def main():
     else:
         try:
             from waitress import serve
-            print(f"💎 [Production] 正在通过 Waitress 启动生产级 WSGI 服务...")
-            serve(app, host=args.host, port=args.port, threads=16)
+            print(f"💎 [Production] 正在通过 Waitress 启动生产级 WSGI 服务 (线程数: {args.threads})...")
+            serve(app, host=args.host, port=args.port, threads=args.threads)
         except ImportError:
             print("⚠️ [Warning] 未安装 waitress，将回退到 Flask 开发服务器。")
             print("💡 建议运行: pip install waitress")
