@@ -326,6 +326,14 @@ DASHBOARD_HTML = r"""
                 <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path></svg>
                 链接挂载播放
             </span>
+            <a href="https://github.com/kyle-meng/CloudHub-139" target="_blank" class="tag" style="text-decoration:none;background:#f0f0f0;color:#24292e;border:1px solid #d0d7de;">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+                GitHub
+            </a>
+            <a href="https://github.com/kyle-meng/CloudHub-139#readme" target="_blank" class="tag" style="text-decoration:none;background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;">
+                <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg>
+                使用教程
+            </a>
         </div>
 
         <div class="action-grid">
@@ -1442,9 +1450,9 @@ def main():
     parser.add_argument("--port", type=int, default=5000, help="监听端口 (默认: 5000)")
     parser.add_argument("--debug", action="store_true", help="开启 Flask 调试模式")
     parser.add_argument("--account", help="139云盘账号 (手机号)")
-    parser.add_argument("--token", help="139云盘 Authorization Token")
+    parser.add_argument("--token", help="139云盘 Authorization Token，例如：Basic cGM6MTM0NTc......")
     parser.add_argument("--interval", type=float, default=2.0, help="递归抓取时的请求间隔秒数 (默认: 2.0)")
-    parser.add_argument("--full-scan", action="store_true", help="保留全量原始数据 (不推荐，体积会非常大)")
+    parser.add_argument("--full-scan", action="store_true", help="保留全量原始数据 (不推荐，体积稍大一点)")
     parser.add_argument("--demo", action="store_true", help="开启资源交流模式（无需账号，禁用抓取和播放）")
     parser.add_argument("--export", help="导出库数据到指定的压缩包文件名")
     parser.add_argument("--import-lib", dest="import_file", help="从指定的压缩包导入/合并库数据")
@@ -1466,6 +1474,37 @@ def main():
     # 优先级: 命令行参数 > 环境变量
     ACCOUNT = args.account or os.getenv("YUN_ACCOUNT")
     AUTH_TOKEN = args.token or os.getenv("YUN_AUTH_TOKEN")
+
+    # 如果通过命令行提供了参数，则同步更新到 .env 文件中方便下次启动
+    if args.account or args.token:
+        try:
+            env_lines = []
+            keys_to_update = {}
+            if args.account: keys_to_update["YUN_ACCOUNT"] = args.account
+            if args.token: keys_to_update["YUN_AUTH_TOKEN"] = args.token
+            
+            if os.path.exists(".env"):
+                with open(".env", "r", encoding="utf-8") as f:
+                    for line in f:
+                        matched = False
+                        for k, v in keys_to_update.items():
+                            if line.strip().startswith(f"{k}="):
+                                env_lines.append(f"{k}={v}\n")
+                                matched = True
+                                del keys_to_update[k]
+                                break
+                        if not matched:
+                            env_lines.append(line)
+            
+            # 添加原文件中不存在的新 key
+            for k, v in keys_to_update.items():
+                env_lines.append(f"{k}={v}\n")
+                
+            with open(".env", "w", encoding="utf-8") as f:
+                f.writelines(env_lines)
+            print("💾 [Config] 已将账号信息同步至本地 .env 文件，下次启动无需再次输入。")
+        except Exception as e:
+            print(f"⚠️ [Config] 自动保存 .env 失败: {e}")
 
     # 自动或手动进入资源交流模式
     if args.demo or not ACCOUNT or not AUTH_TOKEN:
